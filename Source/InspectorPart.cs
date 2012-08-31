@@ -72,14 +72,10 @@ private List<string> Format (FieldInfo[] fields,object obj)
 			return "null";
 		if (o is double | o is float) {
 			if(o>1000000)
-				retu
+			return o.ToString("E2");		
 			return o.ToString ("f2");
 		}
-
-
-
-
-
+		return o.ToString();
 		}
 	}
  
@@ -174,6 +170,7 @@ public class ObjectDumper
 //		return _stringList;
 //
 //	}
+// Example code pulled from forum
     private ObjectDumper(int indentSize)
     {
         _indentSize = indentSize;

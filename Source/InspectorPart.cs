@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Text;
 
 //using System.Linq.Expressions;
+namespace Inspect{
+
 public class InspectorPart : Part{
 
 	/*
@@ -16,28 +18,14 @@ This module will create a new GUI window and button, on button press the part wi
 		private Vector2 _scrollPosition;
 		private  float _width = 300f;
 		private float _height = 300f;
-	private FieldInfo[] reflect <T> (T ThisOb)
-	{
-		Type type = typeof(T);
+		ObjectList<Vessel> objectList;
+		public float UpdateInterval = .5f;
+		private float deltaT = 0f;
+		bool toggle = false;
 
-		FieldInfo[] fields = type.GetFields (BindingFlags.Instance | BindingFlags.Public);
-		List<FieldInfo> list = new List<FieldInfo> (fields);
-		List<FieldInfo> listDelete = new List<FieldInfo> ();
-		foreach (FieldInfo field in list) {
-			if (field.Name == null)
-				listDelete.Add (field);
-		}
-		foreach (FieldInfo field in listDelete) {
-			list.Remove (field);
-		}
-		fields = list.ToArray();
-		return fields;
 
-			//field.SetValue(Root.vessel, Root.transform);
-			//debugprint(field.GetType().ToString()); 
-			//debugprint(field.ReflectedType.GetType().ToString());
 
-	}
+
 
 //	static string GetVariableName<T>(Expression<Func<T>> expr)
 //{
@@ -45,83 +33,36 @@ This module will create a new GUI window and button, on button press the part wi
 //
 //    return body.Member.Name;
 //}
-private List<string> Format (FieldInfo[] fields,object obj)
-	{
-		string varname = "missing";
-		string value = "missing";
-		string type = "missing";
-		string line= "missing";
-		List<string> outList = new List<string>();
 
-		foreach (FieldInfo f in fields) {
-			try {
-				varname = f.Name;
-				type = f.FieldType.ToString();
-				if (!f.IsStatic) value = f.GetValue (obj).ToString (); 
-				if (f.IsStatic ) value = f.GetValue (null).ToString();
-			} 
-			catch{}
-		}
-
-
-
-	}
-	private string FormatValue (object o)
-	{
-		if (o == null)
-			return "null";
-		if (o is double | o is float) {
-			if(o>1000000)
-			return o.ToString("E2");		
-			return o.ToString ("f2");
-		}
-		return o.ToString();
-		}
-	}
+	
  
 		private void WindowGUI (int windowID)
-	{
-		GUIStyle mySty = new GUIStyle (GUI.skin.button); 
-		mySty.normal.textColor = mySty.focused.textColor = Color.white;
-		mySty.hover.textColor = mySty.active.textColor = Color.yellow;
-		mySty.onNormal.textColor = mySty.onFocused.textColor = mySty.onHover.textColor = mySty.onActive.textColor = Color.green;
-		mySty.padding = new RectOffset (8, 8, 8, 8);
+		{
+			GUIStyle mySty = new GUIStyle (GUI.skin.label); 
+			mySty.normal.textColor = mySty.focused.textColor = Color.white;
+			mySty.hover.textColor = mySty.active.textColor = Color.yellow;
+			mySty.onNormal.textColor = mySty.onFocused.textColor = mySty.onHover.textColor = mySty.onActive.textColor = Color.green;
+			mySty.padding = new RectOffset (0, 0, 0, 0);
  
-		GUILayout.BeginVertical ();
-		_scrollPosition = GUILayout.BeginScrollView (_scrollPosition, GUILayout.Width (300), GUILayout.Height (300));
-		GUILayout.Box ("label");
+			GUILayout.BeginVertical ();
+			_scrollPosition = GUILayout.BeginScrollView (_scrollPosition, GUILayout.Width (300), GUILayout.Height (300));
+
+			toggle = GUILayout.Toggle (toggle,objectList.Name,mySty);
+			if (toggle) {
+				foreach (string str in objectList.Entries) {
+					GUILayout.Label (str, GUILayout.ExpandWidth(true));
+				}
+			}
+
 //		List<string> items = ObjectDumper.Dump (vessel);
 //		foreach (string line in items) {
 //			GUILayout.Label (line);
 //		}
+			//objectlist.Clear ();
+		
+		//	GUILayout.Label("f.Name + type +value");
 
-		FieldInfo[] fields = reflect<Vessel> (vessel);
-		foreach (var f in fields) {
-			string varname = "f";
-			string value ="xxx";
-			string type = "";
-			//varname = GetVariableName(() => f);
-			type = " : "+f.FieldType.ToString()+" ";
-			//value =f.GetValue(null).ToString();
-			print (f.Name);
-			try{
-				if(!f.IsStatic){
-					value = f.GetValue(vessel).ToString (); 
-					print (value);
-				}
-			}
-			catch(Exception e)
-			{
-				value =e.ToString();
-				print ( value);
-
-			}
-
-			//print (f.GetValue(null).ToString());
-			//print (type+" "+value);
-			GUILayout.Label(f.Name + type +value);
-
-		}
+		
 		GUILayout.EndScrollView();
 		GUILayout.EndVertical();
  
@@ -135,11 +76,12 @@ private List<string> Format (FieldInfo[] fields,object obj)
 		private void drawGUI()
 		{
             GUI.skin = HighLogic.Skin;
-            windowPos = GUILayout.Window(1, windowPos, WindowGUI, "Self Destruct", GUILayout.MinWidth(100));	 
+            windowPos = GUILayout.Window(1, windowPos, WindowGUI, "Inspector", GUILayout.MinWidth(100));	 
 		}
 		protected override void onFlightStart()  //Called when vessel is placed on the launchpad
 		{
 		    RenderingManager.AddToPostDrawQueue(3, new Callback(drawGUI));//start the GUI
+
 		}
 		protected override void onPartStart()
 		{
@@ -147,14 +89,56 @@ private List<string> Format (FieldInfo[] fields,object obj)
 			{
           	  windowPos = new Rect(Screen.width / 2, Screen.height / 2, 10, 10);
    			}
+			objectList = new ObjectList<Vessel>(vessel);
 		}
 	 	protected override void onPartDestroy() 
 		{
 			RenderingManager.RemoveFromPostDrawQueue(3, new Callback(drawGUI)); //close the GUI
    		}
- 
+protected override void onPartFixedUpdate ()
+	{
+			Timer();
+
+			base.onPartFixedUpdate ();
+		}
+
+ 		private void Timer ()
+	{
+
+		deltaT += Time.fixedDeltaTime;
+			if (deltaT >= UpdateInterval) {
+			deltaT = 0;
+			objectList.Update();
+			}
+
+	}
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 public class ObjectDumper
 {
@@ -295,4 +279,5 @@ public class ObjectDumper
 
         return ("{ }");
     }
+}
 }
